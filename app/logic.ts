@@ -20,6 +20,12 @@ export type Weights = {
   heavyDay: number;
 };
 export type ScoredSchedule = { schedule: FormattedSchedule; score: number };
+export type UpdatedCapacities = {
+  cap: number;
+  act: number;
+  rem: number;
+  crn: number;
+}[];
 
 export const days = ["M", "T", "W", "R", "F"];
 
@@ -60,7 +66,10 @@ function hasConflict(section1: Section, section2: Section) {
   return false;
 }
 
-export function getSchedules(courses: Course[]) {
+export function getSchedules(
+  courses: Course[],
+  updateCapacities: UpdatedCapacities = []
+) {
   if (courses.length === 0) {
     return [];
   }
@@ -68,6 +77,16 @@ export function getSchedules(courses: Course[]) {
   courses.slice(1).forEach((course) => {
     var newSchedules: Schedule[] = [];
     course.sections.forEach((newSection) => {
+      if (updateCapacities.length > 0) {
+        const updated = updateCapacities.find(
+          (update) => update.crn === newSection.crn
+        );
+        if (updated) {
+          newSection.cap = updated.cap;
+          newSection.act = updated.act;
+          newSection.rem = updated.rem;
+        }
+      }
       if (newSection.rem !== 0) {
         outer: for (let i = 0; i < schedules.length; i++) {
           const schedule = schedules[i];
@@ -185,8 +204,28 @@ function scoreSchedules(
   });
 }
 
-export function getOrderedSchedules(courses: Course[], weights: Weights) {
-  const schedules = getSchedules(courses);
+export function getOrderedSchedules(
+  courses: Course[],
+  weights: Weights,
+  updateCapacities: UpdatedCapacities = []
+) {
+  var updatedCourses: Course[] = JSON.parse(JSON.stringify(courses));
+  if (updateCapacities.length > 0) {
+    console.log(updateCapacities);
+    for (let i = 0; i < updatedCourses.length; i++) {
+      for (let j = 0; j < updatedCourses[i].sections.length; j++) {
+        const updated = updateCapacities.find(
+          (update) => update.crn === updatedCourses[i].sections[j].crn
+        );
+        if (updated) {
+          updatedCourses[i].sections[j].cap = updated.cap;
+          updatedCourses[i].sections[j].act = updated.act;
+          updatedCourses[i].sections[j].rem = updated.rem;
+        }
+      }
+    }
+  }
+  const schedules = getSchedules(courses, updateCapacities);
   const scored_schedules = scoreSchedules(schedules, weights);
   return scored_schedules.sort((a, b) => b.score - a.score);
 }

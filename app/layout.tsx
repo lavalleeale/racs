@@ -35,6 +35,7 @@ export default function RootLayout({
             href="https://github.com/lavalleeale/racs"
             target="_blank"
             rel="noreferrer"
+            className="text-white"
           >
             Github
           </a>

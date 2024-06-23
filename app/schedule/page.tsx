@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import {
   Course,
   ScoredSchedule,
+  UpdatedCapacities,
   Weights,
   dayToCommon,
   days,
@@ -56,6 +57,9 @@ export default function Schedule() {
   });
   const [schedules, setSchedules] = useState<ScoredSchedule[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [updatedCapacities, setUpdatedCapacities] = useState<UpdatedCapacities>(
+    []
+  );
 
   useEffect(() => {
     const stored = localStorage.getItem("weights");
@@ -69,13 +73,17 @@ export default function Schedule() {
   }, [weights]);
 
   useEffect(() => {
+    const updatedCapacitiesText = localStorage.getItem("updatedCapacities");
+    if (updatedCapacitiesText) {
+      setUpdatedCapacities(JSON.parse(updatedCapacitiesText));
+    }
     const courseText = localStorage.getItem("courses");
     if (!courseText) {
       setError("No courses selected");
       return;
     }
     const courses: Course[] = JSON.parse(courseText);
-    const output = getOrderedSchedules(courses, weights);
+    const output = getOrderedSchedules(courses, weights, updatedCapacities);
     if (index >= output.length) {
       setIndex(0);
     }
@@ -84,19 +92,40 @@ export default function Schedule() {
       return;
     }
     setSchedules(output);
-  }, [index, weights]);
+  }, [index, weights, updatedCapacities]);
+
+  function updateCapacity() {
+    const courseText = localStorage.getItem("courses");
+    if (!courseText) {
+      return;
+    }
+    const courses: Course[] = JSON.parse(courseText);
+    if (courses) {
+      const crns = courses
+        .flatMap((course) => course.sections.map((e) => e.crn))
+        .join(",");
+      fetch(`/api/capUpdate?crns=${crns}`)
+        .then((res) => res.json())
+        .then((data) => {
+          localStorage.setItem("updatedCapacities", JSON.stringify(data));
+          setUpdatedCapacities(data);
+        });
+    }
+  }
 
   return (
     <div className="w-5/6 m-auto">
       {error && <p className="!text-red-500">{error}</p>}
       {schedules && (
         <>
-          <p className="paper">
-            Classes:{" "}
-            {schedules[0].schedule
-              .map((section) => section.course.title)
-              .join(", ")}
-          </p>
+          <div className="paper">
+            <p>Classes: </p>
+            <p>
+              {schedules[0].schedule
+                .map((section) => section.course.title)
+                .join(", ")}
+            </p>
+          </div>
           <div className="justify-between flex w-full paper">
             <button
               className="btn btn-white"
@@ -264,6 +293,9 @@ export default function Schedule() {
             }
           />
         </div>
+        <button className="btn btn-white" onClick={updateCapacity}>
+          Update Course Capacities
+        </button>
       </div>
     </div>
   );
