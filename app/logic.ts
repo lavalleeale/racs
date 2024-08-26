@@ -68,26 +68,42 @@ function hasConflict(section1: Section, section2: Section) {
 
 export function getSchedules(
   courses: Course[],
-  updateCapacities: UpdatedCapacities = []
-) {
-  if (courses.length === 0) {
-    return [];
-  }
-  var schedules: Schedule[] = courses[0].sections.map((e) => [e]);
-  courses.slice(1).forEach((course) => {
-    var newSchedules: Schedule[] = [];
-    course.sections.forEach((newSection) => {
-      if (updateCapacities.length > 0) {
-        const updated = updateCapacities.find(
-          (update) => update.crn === newSection.crn
-        );
-        if (updated) {
-          newSection.cap = updated.cap;
-          newSection.act = updated.act;
-          newSection.rem = updated.rem;
+  registedSectionIds: string[],
+  forceRegistedSections: boolean = false
+): Schedule[] {
+  const registeredSections = registedSectionIds
+    .map((id) => {
+      for (let i = 0; i < courses.length; i++) {
+        for (let j = 0; j < courses[i].sections.length; j++) {
+          if (courses[i].sections[j].crn.toString() === id) {
+            return courses[i].sections[j];
+          }
         }
       }
-      if (newSection.rem !== 0) {
+      return;
+    })
+    .filter((section) => section !== null) as Section[];
+  const filteredCourses = courses.filter(
+    (course) =>
+      !forceRegistedSections ||
+      !registeredSections.some((section) =>
+        course.sections.some((s) => s.crn === section.crn)
+      )
+  );
+  if (filteredCourses.length === 0) {
+    return registeredSections.length > 0 ? [registeredSections] : [];
+  }
+  var schedules: Schedule[] = filteredCourses[0].sections.map((e) => [
+    e,
+    ...(forceRegistedSections ? registeredSections : []),
+  ]);
+  filteredCourses.slice(1).forEach((course) => {
+    var newSchedules: Schedule[] = [];
+    course.sections.forEach((newSection) => {
+      if (
+        newSection.rem !== 0 ||
+        registedSectionIds.includes(newSection.crn.toString())
+      ) {
         outer: for (let i = 0; i < schedules.length; i++) {
           const schedule = schedules[i];
           for (let j = 0; j < schedule.length; j++) {
@@ -161,7 +177,7 @@ function score(schedule: FormattedSchedule, weights: Weights) {
   return score;
 }
 
-function getCourse(crn: number) {
+export function getCourse(crn: number) {
   for (let i = 0; i < groups.length; i++) {
     for (let j = 0; j < groups[i].courses.length; j++) {
       for (let k = 0; k < groups[i].courses[j].sections.length; k++) {
@@ -207,11 +223,12 @@ function scoreSchedules(
 export function getOrderedSchedules(
   courses: Course[],
   weights: Weights,
-  updateCapacities: UpdatedCapacities = []
+  updateCapacities: UpdatedCapacities = [],
+  registedSectionIds: string[] = [],
+  forceRegistedSections: boolean = false
 ) {
   var updatedCourses: Course[] = JSON.parse(JSON.stringify(courses));
   if (updateCapacities.length > 0) {
-    console.log(updateCapacities);
     for (let i = 0; i < updatedCourses.length; i++) {
       for (let j = 0; j < updatedCourses[i].sections.length; j++) {
         const updated = updateCapacities.find(
@@ -225,7 +242,11 @@ export function getOrderedSchedules(
       }
     }
   }
-  const schedules = getSchedules(courses, updateCapacities);
+  const schedules = getSchedules(
+    courses,
+    registedSectionIds,
+    forceRegistedSections
+  );
   const scored_schedules = scoreSchedules(schedules, weights);
   return scored_schedules.sort((a, b) => b.score - a.score);
 }

@@ -1,9 +1,13 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Course, courseSearch, getSchedules } from "./logic";
 
 export default function CourseList() {
   const [currentCourses, setCurrentCourses] = useState<Course[]>([]);
+  const [registeredCourses, setRegisteredCourses] = useState<
+    { title: string; crn: string }[]
+  >([]);
+  const [gotStoredValues, setGotStoredValues] = useState(false);
   const [query, setquery] = useState("");
   const courses = useMemo(() => {
     return courseSearch(query);
@@ -14,13 +18,31 @@ export default function CourseList() {
     if (stored) {
       setCurrentCourses(JSON.parse(stored));
     }
+    const storedCourses = localStorage.getItem("registeredCourses");
+    if (storedCourses) {
+      setRegisteredCourses(JSON.parse(storedCourses));
+    }
+    setGotStoredValues(true);
   }, []);
 
   useEffect(() => {
+    if (!gotStoredValues) return;
     localStorage.setItem("courses", JSON.stringify(currentCourses));
-  }, [currentCourses]);
+  }, [currentCourses, gotStoredValues]);
 
-  const scheduleCount = getSchedules(currentCourses).length;
+  useEffect(() => {
+    if (!gotStoredValues) return;
+    localStorage.setItem(
+      "registeredCourses",
+      JSON.stringify(registeredCourses)
+    );
+  }, [registeredCourses, gotStoredValues]);
+
+  const scheduleCount = getSchedules(
+    currentCourses,
+    registeredCourses.map((e) => e.crn),
+    false
+  ).length;
   const valid = scheduleCount > 0;
 
   return (

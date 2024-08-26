@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Course,
   ScoredSchedule,
@@ -8,6 +8,7 @@ import {
   Weights,
   dayToCommon,
   days,
+  getCourse,
   getOrderedSchedules,
   minutesBetweenTimes,
   timeToMinutes,
@@ -60,30 +61,72 @@ export default function Schedule() {
   const [updatedCapacities, setUpdatedCapacities] = useState<UpdatedCapacities>(
     []
   );
+  const [registeredCourses, setRegisteredCourses] = useState<
+    { title: string; crn: string }[]
+  >([]);
+  const [newCourse, setNewCourse] = useState("");
+  const [gotStoredValues, setGotStoredValues] = useState(false);
+  const [forceRegisteredCourses, setForceRegisteredCourses] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("weights");
-    if (stored) {
-      setWeights(JSON.parse(stored));
+    const storedWeights = localStorage.getItem("weights");
+    if (storedWeights) {
+      setWeights(JSON.parse(storedWeights));
     }
+    const storedCourses = localStorage.getItem("registeredCourses");
+    if (storedCourses) {
+      setRegisteredCourses(JSON.parse(storedCourses));
+    }
+    const storedForceRegisteredCourses = localStorage.getItem(
+      "forceRegisteredCourses"
+    );
+    if (storedForceRegisteredCourses) {
+      setForceRegisteredCourses(JSON.parse(storedForceRegisteredCourses));
+    }
+    setGotStoredValues(true);
   }, []);
 
   useEffect(() => {
+    if (!gotStoredValues) {
+      return;
+    }
     localStorage.setItem("weights", JSON.stringify(weights));
-  }, [weights]);
+  }, [weights, gotStoredValues]);
 
   useEffect(() => {
-    const updatedCapacitiesText = localStorage.getItem("updatedCapacities");
-    if (updatedCapacitiesText) {
-      setUpdatedCapacities(JSON.parse(updatedCapacitiesText));
+    if (!gotStoredValues) {
+      return;
     }
+    localStorage.setItem(
+      "registeredCourses",
+      JSON.stringify(registeredCourses)
+    );
+  }, [registeredCourses, gotStoredValues]);
+
+  useEffect(() => {
+    if (!gotStoredValues) {
+      return;
+    }
+    localStorage.setItem(
+      "forceRegisteredCourses",
+      JSON.stringify(forceRegisteredCourses)
+    );
+  }, [forceRegisteredCourses, gotStoredValues]);
+
+  useEffect(() => {
     const courseText = localStorage.getItem("courses");
     if (!courseText) {
       setError("No courses selected");
       return;
     }
     const courses: Course[] = JSON.parse(courseText);
-    const output = getOrderedSchedules(courses, weights, updatedCapacities);
+    const output = getOrderedSchedules(
+      courses,
+      weights,
+      updatedCapacities,
+      registeredCourses.map((e) => e.crn),
+      forceRegisteredCourses
+    );
     if (index >= output.length) {
       setIndex(0);
     }
@@ -92,7 +135,13 @@ export default function Schedule() {
       return;
     }
     setSchedules(output);
-  }, [index, weights, updatedCapacities]);
+  }, [
+    index,
+    weights,
+    updatedCapacities,
+    registeredCourses,
+    forceRegisteredCourses,
+  ]);
 
   function updateCapacity() {
     const courseText = localStorage.getItem("courses");
@@ -213,21 +262,67 @@ export default function Schedule() {
       {schedules && (
         <div className="paper">
           <p className="inline">CRNS (click to copy): </p>
-          {schedules[index].schedule.map((e, index) => (
-            <p
-              key={index}
-              className="inline cursor-pointer hover:underline"
-              onClick={() => {
-                navigator.clipboard.writeText(e.crn.toString());
-              }}
-            >
-              {e.crn}
-              {index !== schedules[index].schedule.length - 1 && ", "}
-            </p>
-          ))}
+          {schedules[index].schedule
+            .sort((a, b) => (a.course.title > b.course.title ? 1 : -1))
+            .map((e, index) => (
+              <div key={index}>
+                <p className="inline">{e.course.title}: </p>
+                <p
+                  className="inline cursor-pointer hover:underline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(e.crn.toString());
+                  }}
+                >
+                  {e.crn}
+                </p>
+              </div>
+            ))}
         </div>
       )}
-      <div className="text-sm grid grid-cols-5 paper">
+      <div className="paper">
+        <p>Registered Courses (Click to remove)</p>
+        <ul>
+          {registeredCourses.map((course) => (
+            <button
+              onClick={() => {
+                setRegisteredCourses(
+                  registeredCourses.filter((e) => e !== course)
+                );
+              }}
+              key={course.crn}
+              className="block text-left hover:line-through dark:!decoration-white"
+            >
+              <p>
+                {course.title}: {course.crn}
+              </p>
+            </button>
+          ))}
+        </ul>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const course = getCourse(parseInt(newCourse));
+            if (!course) {
+              return;
+            }
+            setRegisteredCourses([
+              ...registeredCourses,
+              { title: course.title, crn: newCourse },
+            ]);
+            setNewCourse("");
+          }}
+        >
+          <input
+            type="text"
+            className="textfield"
+            placeholder="CRN"
+            value={newCourse}
+            onChange={(e) => setNewCourse(e.target.value)}
+          />
+          <button className="btn btn-white">Add Course</button>
+        </form>
+      </div>
+      <div className="text-sm grid grid-cols-1 lg:grid-cols-5 paper">
         <div className="inline-block">
           <p>Earliest Start Multiplier: {weights.earliestStart}</p>
           <input
@@ -293,9 +388,26 @@ export default function Schedule() {
             }
           />
         </div>
+        <div className="">
+          <p>Force Using Registered Courses</p>
+          <input
+            type="checkbox"
+            checked={forceRegisteredCourses}
+            onChange={(e) => setForceRegisteredCourses(e.target.checked)}
+          />
+        </div>
         <button className="btn btn-white" onClick={updateCapacity}>
           Update Course Capacities
         </button>
+        <div className="col-span-2"></div>
+        <a
+          className=""
+          href={`webcal://129.161.198.131:3000/api/ical.ics?crns=${registeredCourses
+            .map((course) => course.crn)
+            .join(",")}`}
+        >
+          Add To Calendar
+        </a>
       </div>
     </div>
   );
