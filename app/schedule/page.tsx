@@ -402,7 +402,7 @@ export default function Schedule() {
         <div className="col-span-2"></div>
         <a
           className=""
-          href={`webcal://129.161.198.131:3000/api/ical.ics?crns=${registeredCourses
+          href={`webcal://racs.lavallee.one/api/ical.ics?crns=${registeredCourses
             .map((course) => course.crn)
             .join(",")}`}
         >
