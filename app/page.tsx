@@ -1,6 +1,12 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Course, courseSearch, getCourseByCRN, getSchedules } from "./logic";
+import {
+  Course,
+  courseSearch,
+  getCourseByCRN,
+  getCourseById,
+  getSchedules,
+} from "./logic";
 
 export default function CourseList() {
   const [currentCourses, setCurrentCourses] = useState<Course[]>([]);
@@ -16,7 +22,7 @@ export default function CourseList() {
   useEffect(() => {
     const storedCourses = localStorage.getItem("courses");
     if (storedCourses) {
-      setCurrentCourses(JSON.parse(storedCourses));
+      setCurrentCourses(JSON.parse(storedCourses).map(getCourseById));
     }
     const storedRegisteredCourses = localStorage.getItem("registeredCourses");
     if (storedRegisteredCourses) {
