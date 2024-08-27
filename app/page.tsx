@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Course, courseSearch, getSchedules } from "./logic";
+import { Course, courseSearch, getCourseByCRN, getSchedules } from "./logic";
 
 export default function CourseList() {
   const [currentCourses, setCurrentCourses] = useState<Course[]>([]);
@@ -14,29 +14,29 @@ export default function CourseList() {
   }, [query]);
 
   useEffect(() => {
-    const stored = localStorage.getItem("courses");
-    if (stored) {
-      setCurrentCourses(JSON.parse(stored));
-    }
-    const storedCourses = localStorage.getItem("registeredCourses");
+    const storedCourses = localStorage.getItem("courses");
     if (storedCourses) {
-      setRegisteredCourses(JSON.parse(storedCourses));
+      setCurrentCourses(JSON.parse(storedCourses));
+    }
+    const storedRegisteredCourses = localStorage.getItem("registeredCourses");
+    if (storedRegisteredCourses) {
+      setRegisteredCourses(
+        JSON.parse(storedRegisteredCourses).map((e: string) => ({
+          crn: e,
+          title: getCourseByCRN(parseInt(e, 10)).title,
+        }))
+      );
     }
     setGotStoredValues(true);
   }, []);
 
   useEffect(() => {
     if (!gotStoredValues) return;
-    localStorage.setItem("courses", JSON.stringify(currentCourses));
-  }, [currentCourses, gotStoredValues]);
-
-  useEffect(() => {
-    if (!gotStoredValues) return;
     localStorage.setItem(
-      "registeredCourses",
-      JSON.stringify(registeredCourses)
+      "courses",
+      JSON.stringify(currentCourses.map((course) => course.id))
     );
-  }, [registeredCourses, gotStoredValues]);
+  }, [currentCourses, gotStoredValues]);
 
   const scheduleCount = getSchedules(
     currentCourses,

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import QRCode from "react-qr-code";
 import {
   Course,
   ScoredSchedule,
@@ -8,7 +9,8 @@ import {
   Weights,
   dayToCommon,
   days,
-  getCourse,
+  getCourseByCRN,
+  getCourseById,
   getOrderedSchedules,
   minutesBetweenTimes,
   timeToMinutes,
@@ -66,16 +68,29 @@ export default function Schedule() {
   >([]);
   const [newCourse, setNewCourse] = useState("");
   const [gotStoredValues, setGotStoredValues] = useState(false);
-  const [forceRegisteredCourses, setForceRegisteredCourses] = useState(false);
+  const [forceRegisteredCourses, setForceRegisteredCourses] = useState(true);
+  const courses: Course[] = useMemo(() => {
+    const courseText = localStorage.getItem("courses");
+    if (!courseText) {
+      return [];
+    }
+    const parsed: string[] = JSON.parse(courseText);
+    return parsed.map((id) => getCourseById(id));
+  }, []);
 
   useEffect(() => {
     const storedWeights = localStorage.getItem("weights");
     if (storedWeights) {
       setWeights(JSON.parse(storedWeights));
     }
-    const storedCourses = localStorage.getItem("registeredCourses");
-    if (storedCourses) {
-      setRegisteredCourses(JSON.parse(storedCourses));
+    const storedRegisteredCourses = localStorage.getItem("registeredCourses");
+    if (storedRegisteredCourses) {
+      setRegisteredCourses(
+        JSON.parse(storedRegisteredCourses).map((e: string) => ({
+          crn: e,
+          title: getCourseByCRN(parseInt(e, 10)).title,
+        }))
+      );
     }
     const storedForceRegisteredCourses = localStorage.getItem(
       "forceRegisteredCourses"
@@ -99,7 +114,7 @@ export default function Schedule() {
     }
     localStorage.setItem(
       "registeredCourses",
-      JSON.stringify(registeredCourses)
+      JSON.stringify(registeredCourses.map((e) => e.crn))
     );
   }, [registeredCourses, gotStoredValues]);
 
@@ -114,12 +129,6 @@ export default function Schedule() {
   }, [forceRegisteredCourses, gotStoredValues]);
 
   useEffect(() => {
-    const courseText = localStorage.getItem("courses");
-    if (!courseText) {
-      setError("No courses selected");
-      return;
-    }
-    const courses: Course[] = JSON.parse(courseText);
     const output = getOrderedSchedules(
       courses,
       weights,
@@ -141,22 +150,41 @@ export default function Schedule() {
     updatedCapacities,
     registeredCourses,
     forceRegisteredCourses,
+    courses,
   ]);
+
+  const importUrl = `https://racs.lavallee.one/import?data=${btoa(
+    JSON.stringify({
+      courses: courses.map((e) => e.id),
+      registeredCourses: registeredCourses.map((e) => e.crn),
+    })
+  )}`;
 
   function updateCapacity() {
     const courseText = localStorage.getItem("courses");
     if (!courseText) {
       return;
     }
-    const courses: Course[] = JSON.parse(courseText);
+    const parsed: string[] = JSON.parse(courseText);
+    const courses: Course[] = parsed.map((id) => getCourseById(id));
     if (courses) {
       const crns = courses
         .flatMap((course) => course.sections.map((e) => e.crn))
         .join(",");
       fetch(`/api/capUpdate?crns=${crns}`)
         .then((res) => res.json())
-        .then((data) => {
-          localStorage.setItem("updatedCapacities", JSON.stringify(data));
+        .then((data: UpdatedCapacities) => {
+          localStorage.setItem(
+            "updatedCapacities",
+            JSON.stringify(
+              data.map((member) => ({
+                cap: member.cap,
+                act: member.act,
+                rem: member.rem,
+                crn: member.crn,
+              }))
+            )
+          );
           setUpdatedCapacities(data);
         });
     }
@@ -301,7 +329,7 @@ export default function Schedule() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            const course = getCourse(parseInt(newCourse));
+            const course = getCourseByCRN(parseInt(newCourse));
             if (!course) {
               return;
             }
@@ -407,6 +435,13 @@ export default function Schedule() {
             .join(",")}`}
         >
           Add To Calendar
+        </a>
+      </div>
+      <div className="paper hidden lg:block">
+        <p>Import Schedule On Mobile</p>
+        <QRCode value={importUrl} />
+        <a className="break-all" href={importUrl}>
+          Link
         </a>
       </div>
     </div>

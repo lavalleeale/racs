@@ -177,7 +177,7 @@ function score(schedule: FormattedSchedule, weights: Weights) {
   return score;
 }
 
-export function getCourse(crn: number) {
+export function getCourseByCRN(crn: number): Course {
   for (let i = 0; i < groups.length; i++) {
     for (let j = 0; j < groups[i].courses.length; j++) {
       for (let k = 0; k < groups[i].courses[j].sections.length; k++) {
@@ -187,11 +187,23 @@ export function getCourse(crn: number) {
       }
     }
   }
+  return groups[0].courses[0];
+}
+
+export function getCourseById(id: string): Course {
+  for (let i = 0; i < groups.length; i++) {
+    for (let j = 0; j < groups[i].courses.length; j++) {
+      if (groups[i].courses[j].id === id) {
+        return groups[i].courses[j];
+      }
+    }
+  }
+  return groups[0].courses[0];
 }
 
 function formatSchedule(schedule: Schedule): FormattedSchedule {
   return schedule.map((section) => ({
-    course: getCourse(section.crn)!,
+    course: getCourseByCRN(section.crn)!,
     crn: section.crn,
     section: section.sec,
     capacity: section.cap,

@@ -1,4 +1,4 @@
-import { getCourse } from "@/app/logic";
+import { getCourseByCRN } from "@/app/logic";
 import { createEvents } from "ics";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     request.nextUrl.searchParams.get("crn") ?? "",
   ];
   const events = crns.flatMap((crn) => {
-    const course = getCourse(parseInt(crn, 10));
+    const course = getCourseByCRN(parseInt(crn, 10));
     if (!course) {
       return [];
     }
