@@ -1,10 +1,10 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { getCourseById } from "../logic";
 
-export default function Import() {
+function ImportPage() {
   const searchParams = useSearchParams();
 
   const data: { courses: string[]; registeredCourses: string[] } =
@@ -54,4 +54,10 @@ export default function Import() {
       </div>
     </div>
   );
+}
+
+export default function Import() {
+  <Suspense>
+    <ImportPage />
+  </Suspense>;
 }
