@@ -70,6 +70,7 @@ export default function Schedule() {
   const [gotStoredValues, setGotStoredValues] = useState(false);
   const [forceRegisteredCourses, setForceRegisteredCourses] = useState(true);
   const courses: Course[] = useMemo(() => {
+    if (typeof window === "undefined") return [];
     const courseText = localStorage.getItem("courses");
     if (!courseText) {
       return [];
