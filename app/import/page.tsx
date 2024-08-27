@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo } from "react";
 import { getCourseById } from "../logic";
 
-function ImportPage() {
+export function ImportPage() {
   const searchParams = useSearchParams();
 
   const data: { courses: string[]; registeredCourses: string[] } =
@@ -57,7 +57,9 @@ function ImportPage() {
 }
 
 export default function Import() {
-  <Suspense>
-    <ImportPage />
-  </Suspense>;
+  return (
+    <Suspense fallback={<p>Loading...</p>}>
+      <ImportPage />;
+    </Suspense>
+  );
 }
