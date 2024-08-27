@@ -4,10 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // To handle a GET request to /api
 export async function GET(request: NextRequest) {
-  const offset =
-    new Date(
-      new Date().toLocaleString("en-US", { timeZone: "America/New_York" })
-    ).getTimezoneOffset() / 60;
+  process.env.TZ = "America/New_York";
   if (
     !request.nextUrl.searchParams.has("crn") &&
     !request.nextUrl.searchParams.has("crns")
@@ -60,7 +57,7 @@ export async function GET(request: NextRequest) {
         `2024-${timeslot.dateStart.replace("/", "-")}T${endTimeString.slice(
           0,
           -2
-        )}:${endTimeString.slice(-2)}:00-0${offset}:00`
+        )}:${endTimeString.slice(-2)}:00`
       );
       let endDistance = Math.min(
         ...timeslot.days.map((day) => {
