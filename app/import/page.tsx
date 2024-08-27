@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo } from "react";
 import { getCourseById } from "../logic";
 
-export function ImportPage() {
+function ImportPage() {
   const searchParams = useSearchParams();
 
   const data: { courses: string[]; registeredCourses: string[] } =
