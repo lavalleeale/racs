@@ -192,7 +192,7 @@ export default function Schedule() {
   }
 
   return (
-    <div className="w-5/6 m-auto">
+    <div className="w-full md:w-5/6 m-auto">
       {error && <p className="!text-red-500">{error}</p>}
       {schedules && (
         <>

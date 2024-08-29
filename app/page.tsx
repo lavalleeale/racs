@@ -53,7 +53,7 @@ export default function CourseList() {
 
   return (
     <div className="pt-1">
-      <div className="float-right paper">
+      <div className="xl:float-right md:mx-12 xl:m-0 m-auto paper">
         <ul>
           <p className={valid ? "" : "!text-red-500"}>
             {scheduleCount} Valid Schedules
@@ -85,11 +85,11 @@ export default function CourseList() {
           })}
         </ul>
       </div>
-      <div className="w-2/3">
+      <div className="md:mx-12 xl:w-2/3 xl:m-0 m-auto">
         <div className="paper">
           <p>Query:</p>
           <input
-            className="textfield w-1/2"
+            className="textfield md:w-1/2"
             placeholder="Search for a course"
             value={query}
             onChange={(e) => setquery(e.target.value)}

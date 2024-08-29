@@ -76,6 +76,7 @@ export async function GET(request: NextRequest) {
       );
       end.setDate(end.getDate() + endDistance);
       return {
+        uid: `${course.id}-${section.crn}-${start.getTime()}`,
         start: start.getTime(),
         end: end.getTime(),
         title: `${course.id} - ${course.title}`,
