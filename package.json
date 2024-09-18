@@ -11,7 +11,7 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.12",
     "ics": "^3.7.6",
-    "next": "14.2.4",
+    "next": "14.2.10",
     "react": "^18",
     "react-dom": "^18",
     "react-qr-code": "^2.0.15"
