@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
         uid: `${course.id}-${section.crn}-${start.getTime()}`,
         start: start.getTime(),
         end: end.getTime(),
-        title: `${course.id} - ${course.title}`,
+        title: course.title,
         description: course.title,
         location: timeslot.location,
         recurrenceRule:
