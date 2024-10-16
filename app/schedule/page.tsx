@@ -166,7 +166,9 @@ export default function Schedule() {
     courses,
   ]);
 
-  const importUrl = `https://racs.lavallee.one/import?data=${btoa(
+  const importUrl = `https://racs.lavallee.one/import?semester=${
+    (localStorage.getItem("semester") as Semesters) ?? allSemesters[0]
+  }data=${btoa(
     JSON.stringify({
       courses: courses.map((e) => e.id),
       registeredCourses: registeredCourses.map((e) => e.crn),
@@ -449,9 +451,9 @@ export default function Schedule() {
         <div className="col-span-2"></div>
         <a
           className=""
-          href={`webcal://racs.lavallee.one/api/ical.ics?crns=${registeredCourses
-            .map((course) => course.crn)
-            .join(",")}`}
+          href={`webcal://racs.lavallee.one/api/ical.ics?semester=${
+            (localStorage.getItem("semester") as Semesters) ?? allSemesters[0]
+          }crns=${registeredCourses.map((course) => course.crn).join(",")}`}
         >
           Add To Calendar
         </a>

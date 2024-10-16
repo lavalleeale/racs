@@ -2,32 +2,29 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo } from "react";
-import { allSemesters, getCourseById, Semesters } from "../logic";
+import { getCourseById, Semesters } from "../logic";
 
 function ImportPage() {
   const searchParams = useSearchParams();
 
-  const data: { courses: string[]; registeredCourses: string[] } =
-    useMemo(() => {
-      const data = searchParams.get("data");
-      if (!data) {
-        return { courses: [], registeredCourses: [] };
-      }
-      return JSON.parse(atob(data));
-    }, [searchParams]);
+  const data: {
+    semester: Semesters;
+    courses: string[];
+    registeredCourses: string[];
+  } = useMemo(() => {
+    const data = searchParams.get("data");
+    if (!data) {
+      return { courses: [], registeredCourses: [] };
+    }
+    return JSON.parse(atob(data));
+  }, [searchParams]);
   return (
     <div className="w-5/6 m-auto">
       <div className="paper">
         <p>Registered courses from import</p>
         <ul>
           {data.courses
-            .map((course) =>
-              getCourseById(
-                course,
-                (localStorage.getItem("semester") as Semesters) ??
-                  allSemesters[0]
-              )
-            )
+            .map((course) => getCourseById(course, data.semester))
             .map((course) => (
               <p key={course.id}>
                 {course.id}: {course.title}
@@ -47,14 +44,13 @@ function ImportPage() {
         <button
           className="btn btn-white"
           onClick={() => {
-            const semester =
-              localStorage.getItem("semester") ?? allSemesters[0];
+            localStorage.setItem("semester", data.semester);
             localStorage.setItem(
-              `${semester}courses`,
+              `${data.semester}courses`,
               JSON.stringify(data.courses)
             );
             localStorage.setItem(
-              `${semester}registeredCourses`,
+              `${data.semester}registeredCourses`,
               JSON.stringify(data.registeredCourses)
             );
             window.location.href = "/schedule";
