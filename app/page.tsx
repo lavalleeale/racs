@@ -1,11 +1,13 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  allSemesters,
   Course,
   courseSearch,
   getCourseByCRN,
   getCourseById,
   getSchedules,
+  Semesters,
 } from "./logic";
 
 export default function CourseList() {
@@ -15,21 +17,37 @@ export default function CourseList() {
   >([]);
   const [gotStoredValues, setGotStoredValues] = useState(false);
   const [query, setquery] = useState("");
-  const courses = useMemo(() => {
-    return courseSearch(query);
+  const [courses, setCourses] = useState<ReturnType<typeof courseSearch>>([]);
+  useEffect(() => {
+    const semester =
+      typeof window !== "undefined"
+        ? (localStorage.getItem("semester") as Semesters) ?? allSemesters[0]
+        : allSemesters[0];
+    setCourses(courseSearch(query, semester as Semesters));
   }, [query]);
 
   useEffect(() => {
-    const storedCourses = localStorage.getItem("courses");
+    const semester =
+      typeof window !== "undefined"
+        ? (localStorage.getItem("semester") as Semesters) ?? allSemesters[0]
+        : allSemesters[0];
+
+    const storedCourses = localStorage.getItem(`${semester}courses`);
     if (storedCourses) {
-      setCurrentCourses(JSON.parse(storedCourses).map(getCourseById));
+      setCurrentCourses(
+        JSON.parse(storedCourses).map((storedCourse: string) =>
+          getCourseById(storedCourse, semester)
+        )
+      );
     }
-    const storedRegisteredCourses = localStorage.getItem("registeredCourses");
+    const storedRegisteredCourses = localStorage.getItem(
+      `${semester}registeredCourses`
+    );
     if (storedRegisteredCourses) {
       setRegisteredCourses(
         JSON.parse(storedRegisteredCourses).map((e: string) => ({
           crn: e,
-          title: getCourseByCRN(parseInt(e, 10)).title,
+          title: getCourseByCRN(parseInt(e, 10), semester as Semesters).title,
         }))
       );
     }
@@ -37,9 +55,10 @@ export default function CourseList() {
   }, []);
 
   useEffect(() => {
+    const semester = localStorage.getItem("semester") ?? allSemesters[0];
     if (!gotStoredValues) return;
     localStorage.setItem(
-      "courses",
+      `${semester}courses`,
       JSON.stringify(currentCourses.map((course) => course.id))
     );
   }, [currentCourses, gotStoredValues]);

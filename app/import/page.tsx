@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo } from "react";
-import { getCourseById } from "../logic";
+import { allSemesters, getCourseById, Semesters } from "../logic";
 
 function ImportPage() {
   const searchParams = useSearchParams();
@@ -21,7 +21,13 @@ function ImportPage() {
         <p>Registered courses from import</p>
         <ul>
           {data.courses
-            .map((course) => getCourseById(course))
+            .map((course) =>
+              getCourseById(
+                course,
+                (localStorage.getItem("semester") as Semesters) ??
+                  allSemesters[0]
+              )
+            )
             .map((course) => (
               <p key={course.id}>
                 {course.id}: {course.title}
@@ -41,9 +47,14 @@ function ImportPage() {
         <button
           className="btn btn-white"
           onClick={() => {
-            localStorage.setItem("courses", JSON.stringify(data.courses));
+            const semester =
+              localStorage.getItem("semester") ?? allSemesters[0];
             localStorage.setItem(
-              "registeredCourses",
+              `${semester}courses`,
+              JSON.stringify(data.courses)
+            );
+            localStorage.setItem(
+              `${semester}registeredCourses`,
               JSON.stringify(data.registeredCourses)
             );
             window.location.href = "/schedule";

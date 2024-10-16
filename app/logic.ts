@@ -1,7 +1,9 @@
 import catalog from "./catalog_sis.json";
 import groups from "./courses.json";
 
-export type Course = (typeof groups)[0]["courses"][0];
+export type Semesters = keyof typeof groups;
+
+export type Course = (typeof groups)[keyof typeof groups][0]["courses"][0];
 export type Section = Course["sections"][0];
 export type Schedule = Section[];
 export type FormattedSchedule = {
@@ -26,6 +28,10 @@ export type UpdatedCapacities = {
   rem: number;
   crn: number;
 }[];
+
+export const allSemesters: (keyof typeof groups)[] = Object.keys(
+  groups
+) as (keyof typeof groups)[];
 
 export const days = ["M", "T", "W", "R", "F"];
 
@@ -177,33 +183,42 @@ function score(schedule: FormattedSchedule, weights: Weights) {
   return score;
 }
 
-export function getCourseByCRN(crn: number): Course {
-  for (let i = 0; i < groups.length; i++) {
-    for (let j = 0; j < groups[i].courses.length; j++) {
-      for (let k = 0; k < groups[i].courses[j].sections.length; k++) {
-        if (groups[i].courses[j].sections[k].crn === crn) {
-          return groups[i].courses[j];
+export function getCourseByCRN(
+  crn: number,
+  semester: keyof typeof groups
+): Course {
+  for (let i = 0; i < groups[semester].length; i++) {
+    for (let j = 0; j < groups[semester][i].courses.length; j++) {
+      for (let k = 0; k < groups[semester][i].courses[j].sections.length; k++) {
+        if (groups[semester][i].courses[j].sections[k].crn === crn) {
+          return groups[semester][i].courses[j];
         }
       }
     }
   }
-  return groups[0].courses[0];
+  return groups[semester][0].courses[0];
 }
 
-export function getCourseById(id: string): Course {
-  for (let i = 0; i < groups.length; i++) {
-    for (let j = 0; j < groups[i].courses.length; j++) {
-      if (groups[i].courses[j].id === id) {
-        return groups[i].courses[j];
+export function getCourseById(
+  id: string,
+  semester: keyof typeof groups
+): Course {
+  for (let i = 0; i < groups[semester].length; i++) {
+    for (let j = 0; j < groups[semester][i].courses.length; j++) {
+      if (groups[semester][i].courses[j].id === id) {
+        return groups[semester][i].courses[j];
       }
     }
   }
-  return groups[0].courses[0];
+  return groups[semester][0].courses[0];
 }
 
-function formatSchedule(schedule: Schedule): FormattedSchedule {
+function formatSchedule(
+  schedule: Schedule,
+  semester: keyof typeof groups
+): FormattedSchedule {
   return schedule.map((section) => ({
-    course: getCourseByCRN(section.crn)!,
+    course: getCourseByCRN(section.crn, semester)!,
     crn: section.crn,
     section: section.sec,
     capacity: section.cap,
@@ -221,10 +236,11 @@ function formatSchedule(schedule: Schedule): FormattedSchedule {
 
 function scoreSchedules(
   schedules: Schedule[],
-  weights: Weights
+  weights: Weights,
+  semester: keyof typeof groups
 ): ScoredSchedule[] {
   return schedules.map((schedule) => {
-    const formatted = formatSchedule(schedule);
+    const formatted = formatSchedule(schedule, semester);
     return {
       schedule: formatted,
       score: score(formatted, weights),
@@ -237,7 +253,8 @@ export function getOrderedSchedules(
   weights: Weights,
   updateCapacities: UpdatedCapacities = [],
   registedSectionIds: string[] = [],
-  forceRegistedSections: boolean = false
+  forceRegistedSections: boolean = false,
+  semester: keyof typeof groups
 ) {
   var updatedCourses: Course[] = JSON.parse(JSON.stringify(courses));
   if (updateCapacities.length > 0) {
@@ -259,7 +276,7 @@ export function getOrderedSchedules(
     registedSectionIds,
     forceRegistedSections
   );
-  const scored_schedules = scoreSchedules(schedules, weights);
+  const scored_schedules = scoreSchedules(schedules, weights, semester);
   return scored_schedules.sort((a, b) => b.score - a.score);
 }
 
@@ -275,21 +292,45 @@ export function minutesBetweenTimes(time1: number, time2: number): number {
   return Math.abs(minutes2 - minutes1);
 }
 
-export function courseSearch(query: string) {
+export function courseSearch(query: string, semester: Semesters) {
   const lowerQuery = query.toLowerCase();
-  const courses = groups.flatMap((group) => group.courses);
+  const courses = groups[semester].flatMap((group) => group.courses);
   const response = courses
     .filter(
       (course) =>
         course.title.toLowerCase().includes(lowerQuery) ||
         course.id.toLowerCase().includes(lowerQuery) ||
-        catalog[course.id as keyof typeof catalog].description
+        catalog[semester][
+          course.id as keyof (typeof catalog)[typeof semester]
+        ].description
           .toLowerCase()
           .includes(lowerQuery)
     )
     .map((course) => ({
       ...course,
-      description: catalog[course.id as keyof typeof catalog].description,
+      description:
+        catalog[semester][course.id as keyof (typeof catalog)[typeof semester]]
+          .description,
     }));
   return response;
+}
+
+export function shortSemToLongSem(shortSem: string): string {
+  const year = shortSem.substring(0, 4);
+
+  const semNum = shortSem.substring(4);
+  let sem = "";
+  if (semNum === "01") {
+    sem = "Spring";
+  } else if (semNum === "09") {
+    sem = "Fall";
+  } else if (semNum === "05") {
+    sem = "Summer";
+  } else if (semNum === "12") {
+    sem = "Winter Enrichment";
+  } else {
+    sem = semNum;
+  }
+
+  return `${sem} ${year}`;
 }

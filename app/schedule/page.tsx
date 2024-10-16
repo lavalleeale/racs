@@ -5,8 +5,10 @@ import QRCode from "react-qr-code";
 import {
   Course,
   ScoredSchedule,
+  Semesters,
   UpdatedCapacities,
   Weights,
+  allSemesters,
   dayToCommon,
   days,
   getCourseByCRN,
@@ -71,25 +73,31 @@ export default function Schedule() {
   const [forceRegisteredCourses, setForceRegisteredCourses] = useState(true);
   const courses: Course[] = useMemo(() => {
     if (typeof window === "undefined") return [];
-    const courseText = localStorage.getItem("courses");
+    const semester =
+      (localStorage.getItem("semester") as Semesters) ?? allSemesters[0];
+    const courseText = localStorage.getItem(`${semester}courses`);
     if (!courseText) {
       return [];
     }
     const parsed: string[] = JSON.parse(courseText);
-    return parsed.map((id) => getCourseById(id));
+    return parsed.map((id) => getCourseById(id, semester));
   }, []);
 
   useEffect(() => {
+    const semester =
+      (localStorage.getItem("semester") as Semesters) ?? allSemesters[0];
     const storedWeights = localStorage.getItem("weights");
     if (storedWeights) {
       setWeights(JSON.parse(storedWeights));
     }
-    const storedRegisteredCourses = localStorage.getItem("registeredCourses");
+    const storedRegisteredCourses = localStorage.getItem(
+      `${semester}registeredCourses`
+    );
     if (storedRegisteredCourses) {
       setRegisteredCourses(
         JSON.parse(storedRegisteredCourses).map((e: string) => ({
           crn: e,
-          title: getCourseByCRN(parseInt(e, 10)).title,
+          title: getCourseByCRN(parseInt(e, 10), semester).title,
         }))
       );
     }
@@ -110,11 +118,12 @@ export default function Schedule() {
   }, [weights, gotStoredValues]);
 
   useEffect(() => {
+    const semester = localStorage.getItem("semester") ?? allSemesters[0];
     if (!gotStoredValues) {
       return;
     }
     localStorage.setItem(
-      "registeredCourses",
+      `${semester}registeredCourses`,
       JSON.stringify(registeredCourses.map((e) => e.crn))
     );
   }, [registeredCourses, gotStoredValues]);
@@ -130,12 +139,15 @@ export default function Schedule() {
   }, [forceRegisteredCourses, gotStoredValues]);
 
   useEffect(() => {
+    const semester =
+      (localStorage.getItem("semester") as Semesters) ?? allSemesters[0];
     const output = getOrderedSchedules(
       courses,
       weights,
       updatedCapacities,
       registeredCourses.map((e) => e.crn),
-      forceRegisteredCourses
+      forceRegisteredCourses,
+      semester
     );
     if (index >= output.length) {
       setIndex(0);
@@ -162,21 +174,24 @@ export default function Schedule() {
   )}`;
 
   function updateCapacity() {
-    const courseText = localStorage.getItem("courses");
+    const semester =
+      (localStorage.getItem("semester") as Semesters) ?? allSemesters[0];
+    const courseText = localStorage.getItem(`${semester}courses`);
     if (!courseText) {
       return;
     }
     const parsed: string[] = JSON.parse(courseText);
-    const courses: Course[] = parsed.map((id) => getCourseById(id));
+    const courses: Course[] = parsed.map((id) => getCourseById(id, semester));
     if (courses) {
       const crns = courses
         .flatMap((course) => course.sections.map((e) => e.crn))
         .join(",");
-      fetch(`/api/capUpdate?crns=${crns}`)
+      fetch(`/api/capUpdate?crns=${crns}&semester=${semester}`)
         .then((res) => res.json())
         .then((data: UpdatedCapacities) => {
+          const semester = localStorage.getItem("semester") ?? allSemesters[0];
           localStorage.setItem(
-            "updatedCapacities",
+            `${semester}updatedCapacities`,
             JSON.stringify(
               data.map((member) => ({
                 cap: member.cap,
@@ -330,7 +345,10 @@ export default function Schedule() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            const course = getCourseByCRN(parseInt(newCourse));
+            const semester =
+              (localStorage.getItem("semester") as Semesters) ??
+              allSemesters[0];
+            const course = getCourseByCRN(parseInt(newCourse), semester);
             if (!course) {
               return;
             }

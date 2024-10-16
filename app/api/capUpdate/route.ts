@@ -9,13 +9,20 @@ export async function GET(request: NextRequest) {
   ) {
     return NextResponse.json({ message: "CRN is required" }, { status: 400 });
   }
+  if (!request.nextUrl.searchParams.has("semester")) {
+    return NextResponse.json(
+      { message: "Semester is required" },
+      { status: 400 }
+    );
+  }
   const crns = request.nextUrl.searchParams.get("crns")?.split(",") || [
     request.nextUrl.searchParams.get("crn"),
   ];
+  const semester = request.nextUrl.searchParams.get("semester");
   const response = await Promise.all(
     crns.map(async (crn) => {
       const html = await fetch(
-        `https://sis.rpi.edu/rss/bwckschd.p_disp_detail_sched?term_in=202409&crn_in=${crn}`
+        `https://sis.rpi.edu/rss/bwckschd.p_disp_detail_sched?term_in=${semester}&crn_in=${crn}`
       );
       const $ = load(await html.text());
       const seating = $(

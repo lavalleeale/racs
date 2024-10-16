@@ -1,4 +1,4 @@
-import { getCourseByCRN } from "@/app/logic";
+import { allSemesters, getCourseByCRN, Semesters } from "@/app/logic";
 import { createEvents } from "ics";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -11,11 +11,19 @@ export async function GET(request: NextRequest) {
   ) {
     return NextResponse.json({ message: "CRN is required" }, { status: 400 });
   }
+  if (!request.nextUrl.searchParams.has("semester")) {
+    return NextResponse.json(
+      { message: "Semester is required" },
+      { status: 400 }
+    );
+  }
   const crns = request.nextUrl.searchParams.get("crns")?.split(",") || [
-    request.nextUrl.searchParams.get("crn") ?? "",
+    request.nextUrl.searchParams.get("crn") || "",
   ];
+  const semester =
+    request.nextUrl.searchParams.get("semester") ?? allSemesters[0];
   const events = crns.flatMap((crn) => {
-    const course = getCourseByCRN(parseInt(crn, 10));
+    const course = getCourseByCRN(parseInt(crn, 10), semester as Semesters);
     if (!course) {
       return [];
     }
