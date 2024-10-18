@@ -168,7 +168,7 @@ export default function Schedule() {
 
   const importUrl = `https://racs.lavallee.one/import?semester=${
     (localStorage.getItem("semester") as Semesters) ?? allSemesters[0]
-  }data=${btoa(
+  }&data=${btoa(
     JSON.stringify({
       courses: courses.map((e) => e.id),
       registeredCourses: registeredCourses.map((e) => e.crn),
