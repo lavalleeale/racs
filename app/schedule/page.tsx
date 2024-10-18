@@ -170,12 +170,12 @@ export default function Schedule() {
     if (typeof window === "undefined") {
       return "";
     }
-    return `https://racs.lavallee.one/import?semester=${
-      (localStorage.getItem("semester") as Semesters) ?? allSemesters[0]
-    }&data=${btoa(
+    return `https://racs.lavallee.one/import?data=${btoa(
       JSON.stringify({
         courses: courses.map((e) => e.id),
         registeredCourses: registeredCourses.map((e) => e.crn),
+        semester:
+          (localStorage.getItem("semester") as Semesters) ?? allSemesters[0],
       })
     )}`;
   }, [courses, registeredCourses]);
