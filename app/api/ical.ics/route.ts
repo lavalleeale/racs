@@ -1,5 +1,5 @@
 import { allSemesters, getCourseByCRN, Semesters } from "@/app/logic";
-import { createEvents } from "ics";
+import { createEvents, EventAttributes } from "ics";
 import { NextRequest, NextResponse } from "next/server";
 
 // To handle a GET request to /api
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     if (!section) {
       return [];
     }
-    return section.timeslots.map((timeslot) => {
+    return section.timeslots.map((timeslot): EventAttributes => {
       // sections timeslot has dateStart and dateEnd which are in the format of MM/DD
       // sections timeslot has days array which are the days of the week that the class meets on
       // sections timeslot has timeStart and timeEnd which are in the format of HHMM and numbers
@@ -46,10 +46,10 @@ export async function GET(request: NextRequest) {
         endTimeString = "0" + endTimeString;
       }
       var start = new Date(
-        `2024-${timeslot.dateStart.replace("/", "-")}T${startTimeString.slice(
-          0,
-          -2
-        )}:${startTimeString.slice(-2)}:00`
+        `${semester.slice(0, 4)}-${timeslot.dateStart.replace(
+          "/",
+          "-"
+        )}T${startTimeString.slice(0, -2)}:${startTimeString.slice(-2)}:00`
       );
       let startDistance = Math.min(
         ...timeslot.days.map((day) => {
@@ -87,6 +87,8 @@ export async function GET(request: NextRequest) {
         uid: `${course.id}-${section.crn}-${start.getTime()}`,
         start: start.getTime(),
         end: end.getTime(),
+        startOutputType: "local",
+        endOutputType: "local",
         title: course.title,
         description: course.title,
         location: timeslot.location,
@@ -104,7 +106,12 @@ export async function GET(request: NextRequest) {
   if (error) {
     return NextResponse.json({ message: error }, { status: 500 });
   }
-  return new NextResponse(value);
+  return new NextResponse(
+    value
+      ?.replace("DTSTAMP:", "DTSTAMP;TZID=America/New_York:")
+      .replace("DTSTART:", "DTSTART;TZID=America/New_York:")
+      .replace("DTEND:", "DTEND;TZID=America/New_York:")
+  );
 }
 
 function convertDayToIcal(day: string) {

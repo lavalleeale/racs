@@ -186,7 +186,7 @@ export default function Schedule() {
     }
     return `webcal://racs.lavallee.one/api/ical.ics?semester=${
       (localStorage.getItem("semester") as Semesters) ?? allSemesters[0]
-    }crns=${registeredCourses.map((course) => course.crn).join(",")}`;
+    }&crns=${registeredCourses.map((course) => course.crn).join(",")}`;
   }, [registeredCourses]);
 
   function updateCapacity() {
