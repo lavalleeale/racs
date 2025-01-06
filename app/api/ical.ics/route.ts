@@ -62,10 +62,10 @@ export async function GET(request: NextRequest) {
       );
       start.setDate(start.getDate() + startDistance);
       var end = new Date(
-        `2024-${timeslot.dateStart.replace("/", "-")}T${endTimeString.slice(
-          0,
-          -2
-        )}:${endTimeString.slice(-2)}:00`
+        `${semester.slice(0, 4)}-${timeslot.dateStart.replace(
+          "/",
+          "-"
+        )}T${endTimeString.slice(0, -2)}:${endTimeString.slice(-2)}:00`
       );
       let endDistance = Math.min(
         ...timeslot.days.map((day) => {
@@ -77,10 +77,10 @@ export async function GET(request: NextRequest) {
         })
       );
       var endDate = new Date(
-        `2024-${timeslot.dateEnd.replace("/", "-")}T${endTimeString.slice(
-          0,
-          -2
-        )}:${endTimeString.slice(-2)}:00`
+        `${semester.slice(0, 4)}-${timeslot.dateEnd.replace(
+          "/",
+          "-"
+        )}T${endTimeString.slice(0, -2)}:${endTimeString.slice(-2)}:00`
       );
       end.setDate(end.getDate() + endDistance);
       return {
